@@ -1,0 +1,44 @@
+(function process(/*RESTAPIRequest*/ request, /*RESTAPIResponse*/ response) {
+   var responseObj = {}; //The object that should ultimately be returned.
+   var ritmNumber;
+   var requestBody; 
+ 
+  //Set ritmNumber from header value, convert to an array, and trim each element.
+    ritmNumber = request.getHeader('ritm');
+   
+    if (!ritmNumber) {
+        //If ritm header was not set or was malformed, return an error.
+        response.setStatus(417);
+        return 'Unable to process request. Request header \'ritm\' not defined. ' +
+            'Please define a request header called \'ritm\' with the value set to the ticket number for the RITM you\'d like to retrieve the variables for. Value provided for RITM: ' + ritmNumber;
+    }
+    // Trim ritmNumber
+    ritmNumber.trim();
+    // Now we need to get our request body
+    requestBody = request.body.dataString;
+    var myRequestObject = JSON.parse( requestBody );
+ 
+    //declare the var that'll hold the variables object (derived from gr.variables);
+    var ritmVariables;
+    //Get a GlideRecord to start things up
+    var gr = new GlideRecord('sc_req_item');
+    gr.addQuery('number',ritmNumber);
+    gr.query();
+    while (gr.next()) { 
+        gr.setValue("short_description", "Bens GR Update Test");
+		gr.setValue("variables.customer_email_txt,", "Bens GR Justification update");
+        gr.update();
+     //   response.setheader("CANWEWRITE", 'Can Write: ' + gr.canWrite() );
+        responseObj = addObjToObj(responseObj, gr, ritmNumber);
+    }
+ //  response.setHeader(ritmNumber, 'Updated Record for: ' + ritmNumber); //add a header to indicate which RITM was bad.
+ 
+    return responseObj; //Returning the variables and their values. Returning an object here will set the response "body" to the JSON equivalent of this object.
+
+})(request, response);
+ 
+function addObjToObj(parent, child, name)
+{
+    parent[name] = child;
+    return parent;
+}
